@@ -1,4 +1,4 @@
-package word
+package word1
 
 func IsPalindrome(s string) bool {
 	for i := range s {

@@ -1,4 +1,4 @@
-package word
+package word1
 
 import "testing"
 

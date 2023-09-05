@@ -1,4 +1,4 @@
-package word
+package word2
 
 import (
 	"testing"
@@ -30,5 +30,11 @@ func TestIsPalindrome(t *testing.T) {
 		if res != test.want {
 			t.Errorf("IsPalindrome(%q) = %v", test.input, res)
 		}
+	}
+}
+
+func BenchmarkIsPalindrome(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		IsPalindrome("A man, a plan, a canal: Panama")
 	}
 }
