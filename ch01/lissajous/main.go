@@ -12,11 +12,11 @@ import (
 
 var palette = []color.Color{color.Black, color.RGBA{0x00, 0xFF, 0x00, 0xFF}, color.RGBA{0xFF, 0x00, 0x00, 0xFF}}
 
-const (
-	bgIndex        = 0
-	primaryIndex   = 1
-	secondaryIndex = 2
-)
+// const (
+// 	bgIndex        = 0
+// 	primaryIndex   = 1
+// 	secondaryIndex = 2
+// )
 
 func main() {
 	lissajous(os.Stdout)
