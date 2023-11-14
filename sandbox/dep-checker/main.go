@@ -77,14 +77,14 @@ func main() {
 	for _, v := range dirs {
 		deps := grabPackageNames(root, v, direct)
 
-		fmt.Printf("Собрано %d зависимостей по проекту %s...\n", len(deps), v)
+		fmt.Printf("Собрано %d зависимостей по проекту %s\n", len(deps), v)
 
 		for _, v := range deps {
 			allDeps[trimVersion(v)] = RepoInfo{}
 		}
 	}
 
-	fmt.Printf("Собрано %d зависимостей по всем проектам...\n", len(allDeps))
+	fmt.Printf("Собрано %d зависимостей по всем проектам\n", len(allDeps))
 
 	allDepsLen := len(allDeps)
 	counter := 0
@@ -95,7 +95,7 @@ func main() {
 		allDeps[k] = getRepoInfo(k)
 	}
 
-	fmt.Printf("Собраны все репозитории...\n")
+	fmt.Printf("Собраны все репозитории\n")
 
 	data, err := json.MarshalIndent(allDeps, "", "  ")
 
@@ -110,9 +110,9 @@ func main() {
 
 	filename := fmt.Sprintf("%s_%s_deps_repos_info.json", prefix, path.Join(root, strings.Join(dirs, "_")))
 
-	os.WriteFile(filename, data, 0666)
+	fmt.Printf("Запись данных в файл %q...\n", filename)
 
-	fmt.Printf("Данные записаны в файл %q\n", filename)
+	os.WriteFile(filename, data, 0666)
 
 	fmt.Println("Готово!")
 }
