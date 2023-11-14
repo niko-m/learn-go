@@ -103,7 +103,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	filename := path.Join(root, strings.Join(dirs, "_")+"_repos_info.json")
+	prefix := "all"
+	if direct {
+		prefix = "direct"
+	}
+
+	filename := fmt.Sprintf("%s_%s_deps_repos_info.json", prefix, path.Join(root, strings.Join(dirs, "_")))
 
 	os.WriteFile(filename, data, 0666)
 
