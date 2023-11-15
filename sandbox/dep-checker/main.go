@@ -11,10 +11,12 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 var rFlag = flag.String("r", "", "Корневая папка всех проектов")
-var pFlag = flag.String("p", "", "Имена папок проектов через запятую")
+var pFlag = flag.String("p", "", "Имена папок проектов через запятую (относительно корня)")
+var oFlag = flag.String("o", "deprepos", "Имя выходного файла (относительно корня)")
 var dFlag = flag.Bool("d", false, "Собирать только прямые зависимости")
 
 const (
@@ -33,28 +35,18 @@ type ModuleInfo struct {
 }
 
 type RepoInfo struct {
-	Type string `json:"type,omitempty"`
-	Url  string `json:"url,omitempty"`
+	Type  string `json:"type,omitempty"`
+	Url   string `json:"url,omitempty"`
+	Error *error `json:"error,omitempty"`
 }
 
 func main() {
 	var root string
 	var dirs []string
 	var direct bool
+	var out string
 
 	flag.Parse()
-
-	if _, err := exec.LookPath(npm); err != nil {
-		log.Fatalf("%s not found in $PATH", npm)
-	}
-
-	if _, err := exec.LookPath(git); err != nil {
-		log.Fatalf("%s not found in $PATH", git)
-	}
-
-	if _, err := exec.LookPath(licenseChecker); err != nil {
-		log.Fatalf("%s not found in $PATH", licenseChecker)
-	}
 
 	if r, err := filepath.Abs(*rFlag); err != nil {
 		log.Fatalf("Invalid root path:\n%q", err)
@@ -69,6 +61,7 @@ func main() {
 	}
 
 	direct = *dFlag
+	out = *oFlag
 
 	allDeps := make(map[string]RepoInfo)
 
@@ -92,7 +85,11 @@ func main() {
 	for k := range allDeps {
 		counter++
 		fmt.Printf("%d/%d: Получение репозитория зависимости %q...\n", counter, allDepsLen, k)
-		allDeps[k] = getRepoInfo(k)
+		i := getRepoInfo(k)
+		allDeps[k] = i
+		if i.Error != nil {
+			fmt.Println("Ошибка:", i.Error)
+		}
 	}
 
 	fmt.Printf("Собраны все репозитории\n")
@@ -103,12 +100,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	prefix := "all"
-	if direct {
-		prefix = "direct"
-	}
-
-	filename := fmt.Sprintf("%s_%s_deps_repos_info.json", prefix, path.Join(root, strings.Join(dirs, "_")))
+	filename := path.Join(root, fmt.Sprintf("%s_%d.json", out, time.Now().Unix()))
 
 	fmt.Printf("Запись данных в файл %q...\n", filename)
 
@@ -117,7 +109,17 @@ func main() {
 	fmt.Println("Готово!")
 }
 
+// func cloneRepo(repo string) {
+// 	if _, err := exec.LookPath(git); err != nil {
+// 		log.Fatalf("%s not found in $PATH", git)
+// 	}
+// }
+
 func getRepoInfo(name string) RepoInfo {
+	if _, err := exec.LookPath(npm); err != nil {
+		log.Fatalf("%s not found in $PATH", npm)
+	}
+
 	args := []string{
 		"info",
 		name,
@@ -125,17 +127,17 @@ func getRepoInfo(name string) RepoInfo {
 		"repository",
 	}
 
+	var info RepoInfo
 	cmd := exec.Command(npm, args...)
 	data, err := cmd.Output()
 
 	if err != nil {
-		log.Fatalln(err)
+		info.Error = &err
+		return info
 	}
 
-	var info RepoInfo
-
 	if err := json.Unmarshal(data, &info); err != nil {
-		log.Fatalln(err)
+		info.Error = &err
 	}
 
 	return info
@@ -152,6 +154,10 @@ func trimVersion(name string) string {
 }
 
 func grabPackageNames(root, name string, direct bool) []string {
+	if _, err := exec.LookPath(licenseChecker); err != nil {
+		log.Fatalf("%s not found in $PATH", licenseChecker)
+	}
+
 	args := []string{
 		"--start",
 		path.Join(root, name),
@@ -164,7 +170,7 @@ func grabPackageNames(root, name string, direct bool) []string {
 		args = append(args, "--direct", "0")
 	}
 
-	cmd := exec.Command("license-checker-rseidelsohn", args...)
+	cmd := exec.Command(licenseChecker, args...)
 
 	data, err := cmd.Output()
 
